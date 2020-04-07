@@ -11,20 +11,19 @@ from sklearn import metrics
 class KmeansTest:
 
     def __init__(self):
-        self.numero_clusters = 7
+        self.numero_clusters = 10
         self.figure = 0
-        self.true_label = np.array(self.get_true_label())  # true label para o dataset escolhido no caso o D6
+        self.true_label = np.array(self.get_true_label()) 
 
     def main(self):
-        # self.show_elbow()
-        # self.show_silhouette()
-        self.analise('BIC')
-        self.analise('FCTH')
+        #self.analise('BIC')
+        #self.analise('FCTH')
         self.analise('Gabor')
+        #self.analise('Tamura')
         plt.show()
 
     def analise(self, descritor):
-        self.set_amostras(descritor)
+        self.get_samples(descritor)
         modelo = KMeans(n_clusters=self.numero_clusters).fit(self.amostras)
         pred_label = modelo.labels_
         print(descritor + ' Scores')
@@ -32,6 +31,9 @@ class KmeansTest:
         print('Davies-Bouldin score: ' + str(metrics.davies_bouldin_score(self.amostras, pred_label)))
         print(
             'Calinski and Harabasz score: ' + str(metrics.calinski_harabasz_score(self.amostras, pred_label)) + '\n\n')
+        #self.visualiza_clusterizacao(descritor, pred_label)
+
+    def visualiza_clusterizacao(self, descritor, pred_label):
         tsne = TSNE()
         visualizacao = tsne.fit_transform(self.amostras)
         self.nova_figura()
@@ -53,57 +55,6 @@ class KmeansTest:
         ax.get_legend().remove()
         ax.set_title('Pred label')
 
-    def show_silhouette(self):
-        self.set_amostras('BIC')
-        self.get_silhouette('BIC')
-        self.set_amostras('FCTH')
-        self.get_silhouette('FCTH')
-        self.set_amostras('Gabor')
-        self.get_silhouette('Gabor')
-
-    def get_silhouette(self, descritor):
-        self.nova_figura()
-        silhouette = [self.silhouette_kmeans(numero_clusters) for numero_clusters in range(2, 50)]
-        silhouette = pd.DataFrame(silhouette, columns=['grupos', 'score'])
-        plt.plot(silhouette.grupos, silhouette.score)
-        plt.suptitle('Silhouette method - ' + descritor)
-        plt.xlabel('Numero de clusters')
-        plt.ylabel('Coeficiente de silhueta')
-        plt.xticks(silhouette.grupos)
-        #plt.ylim(min(silhouette.score), silhouette.score[1])
-        #plt.xlim(2, 50)
-
-    def silhouette_kmeans(self, numero_clusters):
-        modelo = KMeans(n_clusters=numero_clusters).fit(self.amostras)
-        return [numero_clusters, metrics.silhouette_score(self.amostras, modelo.labels_)]
-
-    def elbow_kmeans(self, numero_clusters):
-        modelo = KMeans(n_clusters=numero_clusters).fit(self.amostras)
-        return [numero_clusters, modelo.inertia_]
-
-    def show_elbow(self):
-        self.set_amostras('BIC')
-        self.get_elbow('BIC')
-        self.set_amostras('FCTH')
-        self.get_elbow('FCTH')
-        self.set_amostras('Gabor')
-        self.get_elbow('GABOR')
-
-    def set_amostras(self, descritor):
-        self.amostras = np.array(self.get_samples(descritor))
-
-    def get_elbow(self, descritor):
-        self.nova_figura()
-        elbow = [self.elbow_kmeans(numero_clusters) for numero_clusters in range(1, 50)]
-        elbow = pd.DataFrame(elbow, columns=['grupos', 'inertia'])
-        plt.plot(elbow.grupos, elbow.inertia)
-        plt.suptitle('Elbow method - ' + descritor)
-        plt.xlabel('Numero de clusters')
-        plt.ylabel('SSE')
-        plt.xticks(elbow.grupos)
-        plt.ylim(min(elbow.inertia), elbow.inertia[1])
-        plt.xlim(2, 50)
-
     def get_samples(self, descritor):
         linhas = [linha.rstrip('\n') for linha in open('caracteristicas/' + descritor + '.txt')]
         aux = []
@@ -115,20 +66,17 @@ class KmeansTest:
             auxList = list(map(float, auxList))
             auxList = np.array(auxList)
             aux.append(auxList)
-        return aux
+        self.amostras = np.array(aux)
 
     def nova_figura(self):
         plt.figure(self.figure)
         self.figure = self.figure + 1
 
     def get_true_label(self):
-        true_label = [0] * 128  # OX
-        true_label[128:136] = [1] * 9  # 2M
-        true_label[137:253] = [2] * 117  # 2P
-        true_label[254:456] = [3] * 203  # 2U
-        true_label[457:480] = [4] * 24  # 3M
-        true_label[481:622] = [5] * 142  # 3P
-        true_label[623:653] = [6] * 31  # 3U
+        linhas = [linha.rstrip('\n') for linha in open('caracteristicas/true_label.txt')]
+        true_label = []
+        for linha in linhas:
+            true_label.append(linha)
         return true_label
 
 
