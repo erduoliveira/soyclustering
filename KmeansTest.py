@@ -3,6 +3,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.cluster import Birch
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.cluster import OPTICS
+from sklearn.cluster import DBSCAN
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.manifold import TSNE
 import seaborn as sns
 from sklearn import metrics
@@ -16,22 +21,26 @@ class KmeansTest:
         self.true_label = np.array(self.get_true_label()) 
 
     def main(self):
-        #self.analise('BIC')
-        #self.analise('FCTH')
-        self.analise('Gabor')
-        #self.analise('Tamura')
+        self.get_samples('Tamura')
+        self.analise('Tamura', 'KMEANS')
+        # self.analise('BIC', 'BIRCH')
+        # self.analise('BIC', 'AGNES')
+        # self.analise('BIC', 'OPTICS') # ajustar parametros para o optics
+        # self.analise('BIC', 'DBSCAN') # ajustar parametros para o dbscan
         plt.show()
 
-    def analise(self, descritor):
-        self.get_samples(descritor)
-        modelo = KMeans(n_clusters=self.numero_clusters).fit(self.amostras)
-        pred_label = modelo.labels_
-        print(descritor + ' Scores')
-        print('Fowlkes-Mallows score: ' + str(metrics.fowlkes_mallows_score(self.true_label, pred_label)))
-        print('Davies-Bouldin score: ' + str(metrics.davies_bouldin_score(self.amostras, pred_label)))
-        print(
-            'Calinski and Harabasz score: ' + str(metrics.calinski_harabasz_score(self.amostras, pred_label)) + '\n\n')
-        #self.visualiza_clusterizacao(descritor, pred_label)
+    def analise(self, descritor, algoritmo):
+        modelo = self.get_modelo(algoritmo)
+        if modelo == 0:
+            pass
+        else:
+            pred_label = modelo.labels_
+            print('Grupos {}'.format(np.unique(pred_label)))
+            print(algoritmo+'-'+descritor+' Scores')
+            print('Fowlkes-Mallows score: ' + str(metrics.fowlkes_mallows_score(self.true_label, pred_label)))
+            print('Davies-Bouldin score: ' + str(metrics.davies_bouldin_score(self.amostras, pred_label)))
+            print('Calinski and Harabasz score: '+str(metrics.calinski_harabasz_score(self.amostras, pred_label)) + '\n\n')
+            #self.visualiza_clusterizacao(descritor, pred_label)'
 
     def visualiza_clusterizacao(self, descritor, pred_label):
         tsne = TSNE()
@@ -78,6 +87,23 @@ class KmeansTest:
         for linha in linhas:
             true_label.append(linha)
         return true_label
+
+    def get_modelo(self, algoritmo):
+        if algoritmo == 'KMEANS':
+            return KMeans(n_clusters=self.numero_clusters).fit(self.amostras)
+        elif algoritmo == 'BIRCH':
+            return Birch(n_clusters=self.numero_clusters).fit(self.amostras)
+        elif algoritmo == 'AGNES':
+            return AgglomerativeClustering(n_clusters=self.numero_clusters).fit(self.amostras)
+        elif algoritmo == 'OPTICS':
+            #return OPTICS().fit(self.amostras)
+            return 0
+        elif algoritmo == 'DBSCAN':
+            #return DBSCAN().fit(self.amostras)
+            return 0
+        else:
+            pass
+
 
 
 if __name__ == '__main__':
