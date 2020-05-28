@@ -53,7 +53,7 @@ class NumeroClusters:
         plt.xlim(2, self.cluster_max)
 
     def get_samples(self, descritor):
-        linhas = [linha.rstrip('\n') for linha in open('caracteristicas/' + descritor + '.txt')]
+        linhas = [linha.rstrip('\n') for linha in open('caracteristicas-d6/' + descritor + '.txt')]
         aux = []
         for linha in linhas[1:]:  # Skip primeira linha (Contem apenas metadata)
             auxList = linha.split(' ')
