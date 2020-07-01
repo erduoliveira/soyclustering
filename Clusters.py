@@ -26,8 +26,11 @@ from pyclustering.cluster.kmedoids import kmedoids
 from pyclustering.cluster.optics import optics
 from pyclustering.cluster.rock import rock
 from pyclustering.cluster import cluster_visualizer_multidim
-import dhaaActiveLearning
 from Utils import Utils
+
+from sklearn.metrics import confusion_matrix
+from scipy.optimize import linear_sum_assignment as linear_assignment
+
 
 import xlwt
 
@@ -36,56 +39,59 @@ class Clusters:
     def __init__(self):
         self.util = Utils()
         self.figura = 0
-        self.descritores = ['BIC', 'CEDD', 'FCTH', 'Gabor', 'GCH',
-               'Haralick', 'HaralickColor', 'HaralickFull', 'JCD',
-               'LBP', 'LCH', 'Moments', 'MPO', 'MPOC',
+        self.descritores = ['AutoColorCorrelogram', 'BIC', 'CEDD', 'FCTH',
+               'Gabor', 'GCH', 'Haralick', 'HaralickColor', 'HaralickFull',
+               'JCD', 'LBP', 'LCH', 'Moments', 'MPO', 'MPOC',
                'PHOG', 'ReferenceColorSimilarity', 'Tamura']
-        self.algoritmos = ['AGNES', 'CLARANS', 'CURE',
-                           'FCM', 'KMEANS', 'KMEDOIDS']
+        self.algoritmos = ['AGNES', 'CURE',
+                          'FCM', 'KMEANS', 'KMEDOIDS']
+        #self.algoritmos = ['KMEDOIDS']
         self.algoritmos_param = ['DBSCAN', 'OPTICS', 'ROCK']
-        self.dbscan_param = [[18950,2], [3.1,12], [2,2], [0.34,2], [33853.6,3],
-                             [77.26,8], [844.66,5], [95193400000,3], [2.5,2], [3060,2],
-                             [22866.1,2], [1.443,3], [31.159,5], [219.62,2], [0.0862939,2],
-                             [0.0358037,4], [110.98,2]]
-        # self.optics_param = [[22929.5,2], [3.1,3], [2,2], [0.4114,2], [40962.856,2],
-        #                      [93.4846,5], [1022.0386,3], [115184014000,3], [3.025,4], [3702.6,5],
-        #                      [27677.981,5], [1.74603,3], [37.70239,4], [265.7402,3], [0.104415619,9],
-        #                      [0.043322477,2], [134.2858,1]]
-        self.optics_param = [[18950,2], [3.1,3], [2,2], [0.34,2], [33853.6,2],
-                             [77.26,5], [844.66,3], [95193400000,3], [2.5,4], [3060,5],
-                             [22866.1,5], [1.443,3], [31.159,4], [219.62,3], [0.0862939,2],
-                             [0.0358037,2], [110.98,1]]
-        self.rock_param = [[77000,0], [12.89,0], [8.32,0], [1.41,0], [140763,0], [321.25,0],
-                           [3512.1,0], [395814553014,0], [10.40,0], [12723.49,0], [95077.34,0], [6,0], [129.56,0],
-                           [1100,0], [0.36,0], [0.15,0], [461.46,0]]
-        self.conjunto = 'caracteristicas-d8'
-        self.numero_clusters = 10
+        self.conjunto = 'd7'
+        # atualizar k-medoids iniciais ao trocar o numero de clusters
+        self.numero_clusters = 7
+        self.dbscan_param, self.optics_param, self.rock_param = self.util.get_densidade_param(self.conjunto)
         self.lista_corrigida = np.array(self.util.get_lista_corrigida(self.conjunto))
         self.wb = xlwt.Workbook()
         
     def main(self):
-        algoritmo = 'ROCK'
-        descritor = 'JCD'
-        self.amostras = self.util.get_amostras(self.conjunto, descritor)
-        self.lista_agrupada = self.get_modelo(algoritmo, 12.99675, 0)
-        self.analise(descritor, algoritmo)
-        self.util.visualiza_clusterizacao(self.amostras, self.lista_agrupada, algoritmo, descritor)
-        # parametros = [self.dbscan_param, self.optics_param, self.rock_param]
-        # i = 0
-        # for algoritmo in self.algoritmos_param:
-        #     j = 0
-        #     for descritor in self.descritores:
-        #         self.amostras = self.util.get_amostras(self.conjunto, descritor)
-        #         #self.lista_agrupada = self.get_modelo(algoritmo, 0, 0)
-        #         self.lista_agrupada = self.get_modelo(algoritmo, parametros[i][j][0], parametros[i][j][1])
-        #         self.analise(descritor, algoritmo)
-        #         self.util.visualiza_clusterizacao(self.amostras, self.lista_agrupada, algoritmo, descritor)
-        #         j = j + 1
-        #     i = i + 1
-        #self.grava_resultados()
-        #self.save_algoritmos_param()
+        # for descritor in self.descritores:
+        #     self.amostras = self.util.get_amostras(self.conjunto, descritor)
+        #     self.util.visualiza_clusterizacao(self.amostras, self.lista_corrigida, self.lista_corrigida,
+        #                                       'True_label', descritor, 'plots/v2/' + self.conjunto + '/TRUE/', 'TSNE')
+        #     self.util.visualiza_clusterizacao(self.amostras, self.lista_corrigida, self.lista_corrigida,
+        #                                       'True_label', descritor, 'plots/v2/' + self.conjunto + '/TRUE/', 'PCA')
+        # self.amostras = self.util.get_amostras(self.conjunto, descritor)
+        # self.lista_agrupada = self.get_modelo(algoritmo, 0, 0)
+        # print(self.acuracia(self.lista_corrigida,self.lista_agrupada))
+        # self.analise(descritor, algoritmo)
+        # self.util.visualiza_clusterizacao(self.amostras, self.lista_agrupada, algoritmo, descritor)
+        self.grava_resultados('d7-testes1')
+        #self.save_algoritmos_param('d7-densidade-autocolor')
+        #self.desviop(51,'FCM')
+        #self.desviop(51,'KMEANS')
 
-    def save_algoritmos_param(self):
+
+    def acuracia(self, lista_corrigida, lista_agrupada):
+        agrupada = lista_agrupada.astype(np.int)
+        corrigida = lista_corrigida.astype(np.int)
+
+        cm = confusion_matrix(corrigida, agrupada)
+        indexes = np.asarray(linear_assignment(self.make_cost_m(cm))) #encontra a melhor ordem da matrix de confusao
+        cm2 = cm[:, indexes[1]]                                       #altera a ordem na matrix de confusao
+        #ax = sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+        #self.util.nova_figura(2)
+        #ay = sns.heatmap(cm2, annot=True, fmt="d", cmap="Blues")
+        #plt.show()
+        # print(np.trace(cm2))
+        # print(np.sum(cm2))
+        return (np.trace(cm2)/np.sum(cm2))
+
+    def make_cost_m(self, cm):
+        s = np.max(cm)
+        return (- cm + s)
+
+    def save_algoritmos_param(self, nome_arquivo):
         parametros = [self.dbscan_param, self.optics_param, self.rock_param]
         i = 0
         for algoritmo in self.algoritmos_param:
@@ -94,48 +100,59 @@ class Clusters:
             ws.write(0, 0, 'algoritmo')
             ws.write(0, 1, 'descritor')
             ws.write(0, 2, 'numero de grupos')
-            ws.write(0, 3, 'fowkes-m')
-            ws.write(0, 4, 'davies-b')
-            ws.write(0, 5, 'calinski-h')
+            ws.write(0, 3, 'acuracia')
+            ws.write(0, 4, 'fowkes-m')
+            ws.write(0, 5, 'davies-b')
+            ws.write(0, 6, 'calinski-h')
             for descritor in self.descritores:
                 self.amostras = self.util.get_amostras(self.conjunto, descritor)
                 self.lista_agrupada = self.get_modelo(algoritmo, parametros[i][j][0], parametros[i][j][1])
                 self.save_analise(descritor, algoritmo, j+1, ws)
+                self.util.visualiza_clusterizacao(self.amostras, self.lista_corrigida, self.lista_agrupada,
+                                                  algoritmo, descritor, 'plots/v2/'+self.conjunto+'/', 'TSNE')
+                self.util.visualiza_clusterizacao(self.amostras, self.lista_corrigida, self.lista_agrupada,
+                                                  algoritmo, descritor, 'plots/v2/'+self.conjunto+'/', 'PCA')
                 j = j + 1
             i = i + 1
-        self.wb.save('exp-anteriores/d771results.xls')
+        self.wb.save('exp-anteriores/v2/'+self.conjunto+'/'+nome_arquivo+'.xls')
 
-    def desviop(self, range, algoritmo):
+    def desviop(self, ntestes, algoritmo):
         for descritor in self.descritores:
             self.amostras = self.util.get_amostras(self.conjunto, descritor)
             ws = self.wb.add_sheet(descritor)
             ws.write(0, 0, 'algoritmo')
             ws.write(0, 1, 'descritor')
             ws.write(0, 2, 'numero de grupos')
-            ws.write(0, 3, 'fowkes-m')
-            ws.write(0, 4, 'davies-b')
-            ws.write(0, 5, 'calinski-h')
-            for l in range(1,range):
-                self.lista_agrupada = self.get_modelo(algoritmo)
+            ws.write(0, 3, 'acuracia')
+            ws.write(0, 4, 'fowkes-m')
+            ws.write(0, 5, 'davies-b')
+            ws.write(0, 6, 'calinski-h')
+            for l in range(1,ntestes):
+                self.lista_agrupada = self.get_modelo(algoritmo,0,0)
                 self.save_analise(descritor, algoritmo, l, ws)
-        self.wb.save('exp-anteriores/'+algoritmo+'-d7.xls')
+        self.wb.save('exp-anteriores/v2/'+self.conjunto+'/'+algoritmo+'.xls')
 
-    def grava_resultados(self):
+    def grava_resultados(self, nome_arquivo):
         for algoritmo in self.algoritmos:
             ws = self.wb.add_sheet(algoritmo)
             ws.write(0,0,'algoritmo')
             ws.write(0,1,'descritor')
             ws.write(0,2,'numero de grupos')
-            ws.write(0,3,'fowkes-m')
-            ws.write(0,4,'davies-b')
-            ws.write(0,5,'calinski-h')
+            ws.write(0,3,'acuracia')
+            ws.write(0,4,'fowkes-m')
+            ws.write(0,5,'davies-b')
+            ws.write(0,6,'calinski-h')
             l = 1
             for descritor in self.descritores:
                 self.amostras = self.util.get_amostras(self.conjunto, descritor)
-                self.lista_agrupada = self.get_modelo(algoritmo)
+                self.lista_agrupada = self.get_modelo(algoritmo,0,0)
                 self.save_analise(descritor, algoritmo, l, ws)
+                self.util.visualiza_clusterizacao(self.amostras, self.lista_corrigida, self.lista_agrupada,
+                                                  algoritmo, descritor, 'plots/v2/' + self.conjunto + '/', 'TSNE')
+                self.util.visualiza_clusterizacao(self.amostras, self.lista_corrigida, self.lista_agrupada,
+                                                  algoritmo, descritor, 'plots/v2/' + self.conjunto + '/', 'PCA')
                 l = l + 1
-        self.wb.save('exp-anteriores/d71results.xls')
+        self.wb.save('exp-anteriores/v2/'+self.conjunto+'/'+nome_arquivo+'.xls')
 
     def analise(self, descritor, algoritmo):
         if self.lista_agrupada is None:
@@ -143,6 +160,7 @@ class Clusters:
         else:
             print('Grupos {}'.format(np.unique(self.lista_agrupada)))
             print(algoritmo+'-'+descritor+' Scores')
+            print('Acuracia: ' + self.acuracia(self.lista_corrigida, self.lista_agrupada))
             print('Fowlkes-Mallows score: ' + str(metrics.fowlkes_mallows_score(self.lista_corrigida, self.lista_agrupada)))
             print('Davies-Bouldin score: ' + str(metrics.davies_bouldin_score(self.amostras, self.lista_agrupada)))
             print('Calinski and Harabasz score: '+str(metrics.calinski_harabasz_score(self.amostras, self.lista_agrupada)) + '\n\n')
@@ -155,16 +173,15 @@ class Clusters:
                 ws.write(linha, 0, algoritmo)
                 ws.write(linha, 1, descritor)
                 ws.write(linha, 2, len(np.unique(self.lista_agrupada))) #numero de grupo
-                ws.write(linha, 3, metrics.fowlkes_mallows_score(self.lista_corrigida, self.lista_agrupada))
-                ws.write(linha, 4, metrics.davies_bouldin_score(self.amostras, self.lista_agrupada))
-                ws.write(linha, 5, metrics.calinski_harabasz_score(self.amostras, self.lista_agrupada))
+                ws.write(linha, 3, self.acuracia(self.lista_corrigida, self.lista_agrupada))
+                ws.write(linha, 4, metrics.fowlkes_mallows_score(self.lista_corrigida, self.lista_agrupada))
+                ws.write(linha, 5, metrics.davies_bouldin_score(self.amostras, self.lista_agrupada))
+                ws.write(linha, 6, metrics.calinski_harabasz_score(self.amostras, self.lista_agrupada))
             except:
                 print('Tive de pular a etapa -> '+algoritmo+ ' '+ descritor)
                 exit(-1)
          
     def get_modelo(self, algoritmo, eps, neig):
-        # eps = 0
-        # neig = 0
         print(algoritmo+ ' '+ str(eps)+ ' - '+ str(neig))
         instance = None
 
@@ -185,7 +202,7 @@ class Clusters:
             initial_centers = kmeans_plusplus_initializer(self.amostras, self.numero_clusters).initialize()
             instance = kmeans(self.amostras, initial_centers, tolerance=0.001)
         elif algoritmo == 'KMEDOIDS':
-            instance = kmedoids(self.amostras, initial_index_medoids=[0,0,0,0,0,0,0,0,0,0], tolerance=0.0001) #ajustar o n_de cluster
+            instance = kmedoids(self.amostras, initial_index_medoids=[0,0,0,0,0,0,0], tolerance=0.0001) #ajustar o n_de cluster
         elif algoritmo == 'OPTICS':
             instance = optics(self.amostras, eps=eps, minpts=neig)
         elif algoritmo == 'ROCK':
@@ -196,9 +213,11 @@ class Clusters:
         instance.process()
         lista_agrupada = self.get_lista_agrupada(instance.get_clusters())
         lista_agrupada = np.array(lista_agrupada)
-        # n_grupos = len(np.unique(lista_agrupada))
-        # if n_grupos > 7:
-        #     lista_agrupada = self.get_modelo(algoritmo, eps, neig+1)
+
+        if (neig != 0):
+            n_grupos = len(np.unique(lista_agrupada))
+            if n_grupos > self.numero_clusters:
+                lista_agrupada = self.get_modelo(algoritmo, eps, neig+1)
         return lista_agrupada
 
     ##
